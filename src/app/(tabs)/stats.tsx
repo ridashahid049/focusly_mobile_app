@@ -1,10 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '../../constants/colors';
 import { useTasks } from '../../context/tasks-context';
 import { Screen } from '../../components/focusly/Screen';
 import { StatCard } from '../../components/focusly/StatCard';
 import { ProgressBar } from '../../components/focusly/ProgressBar';
+import { ProfileButton } from '../../components/focusly/ProfileButton';
+import { ProfileMenu } from '../../components/focusly/ProfileMenu';
 import { todayKey } from '../../utils/date';
 import { getStats, getWeeklySummary } from '../../utils/tasks';
 
@@ -12,6 +14,7 @@ const BAR_MAX_HEIGHT = 96;
 
 export default function StatsScreen() {
   const { tasks } = useTasks();
+  const [menuOpen, setMenuOpen] = useState(false);
   const today = todayKey();
 
   const stats = useMemo(() => getStats(tasks), [tasks]);
@@ -20,7 +23,11 @@ export default function StatsScreen() {
 
   return (
     <Screen>
-      <Text style={styles.title}>Progress</Text>
+      <ProfileMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
+      <View style={styles.header}>
+        <Text style={styles.title}>Progress</Text>
+        <ProfileButton onPress={() => setMenuOpen(true)} />
+      </View>
 
       <View style={styles.row}>
         <StatCard label="Total" value={stats.total} icon="layers-outline" />
@@ -92,7 +99,13 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { color: colors.text, fontSize: 26, fontWeight: '800' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  title: { color: colors.text, fontSize: 26, fontWeight: '800', flex: 1 },
   row: { flexDirection: 'row', gap: spacing.md },
   card: {
     backgroundColor: colors.surface,

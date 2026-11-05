@@ -1,18 +1,63 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '../../constants/colors';
 import { useTasks } from '../../context/tasks-context';
+import { useAuth } from '../../context/auth-context';
 import { Screen } from '../../components/focusly/Screen';
 import { Button } from '../../components/focusly/Button';
+import { ProfileButton } from '../../components/focusly/ProfileButton';
+import { ProfileMenu } from '../../components/focusly/ProfileMenu';
 import { confirmAction } from '../../utils/confirm';
+import { getDisplayName } from '../../utils/user';
 
 export default function SettingsScreen() {
   const { tasks, settings, updateSettings, clearAllTasks } = useTasks();
+  const { user, signOut } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const email = user?.email ?? 'Signed in';
+  const displayName = getDisplayName(user);
 
   return (
     <Screen>
-      <Text style={styles.title}>Settings</Text>
+      <ProfileMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
+      <View style={styles.header}>
+        <Text style={styles.title}>Settings</Text>
+        <ProfileButton onPress={() => setMenuOpen(true)} />
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Account</Text>
+        <View style={styles.accountRow}>
+          <View style={styles.accountIcon}>
+            <Ionicons name="person-circle-outline" size={22} color={colors.lightViolet} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.prefLabel} numberOfLines={1}>
+              {displayName}
+            </Text>
+            <Text style={styles.muted} numberOfLines={1}>
+              {email}
+            </Text>
+          </View>
+        </View>
+        <Button
+          title="Sign out"
+          variant="danger"
+          icon="log-out-outline"
+          onPress={() =>
+            confirmAction(
+              'Sign out',
+              'You will need to sign in again to access your tasks on this device.',
+              'Sign out',
+              () => {
+                void signOut();
+              }
+            )
+          }
+        />
+      </View>
 
       <View style={styles.card}>
         <View style={styles.appRow}>
@@ -74,7 +119,13 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { color: colors.text, fontSize: 26, fontWeight: '800' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  title: { color: colors.text, fontSize: 26, fontWeight: '800', flex: 1 },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -82,6 +133,15 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.lg,
     gap: spacing.md,
+  },
+  accountRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  accountIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   appRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   logo: {

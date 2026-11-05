@@ -15,6 +15,7 @@ import {
   saveSettings,
   saveTasks,
 } from '../utils/storage';
+import { useAuth } from './auth-context';
 
 type TasksContextValue = {
   tasks: Task[];
@@ -49,6 +50,9 @@ function cleanInput(input: TaskInput): TaskInput {
 }
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
@@ -56,38 +60,62 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
   const tasksRef = useRef<Task[]>([]);
   const settingsRef = useRef<Settings>(DEFAULT_SETTINGS);
+  const userIdRef = useRef<string | null>(userId);
+
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
 
   useEffect(() => {
     let active = true;
+    if (!userId) {
+      tasksRef.current = [];
+      settingsRef.current = DEFAULT_SETTINGS;
+      setTasks([]);
+      setSettings(DEFAULT_SETTINGS);
+      setLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    setLoading(true);
+    setError(null);
     (async () => {
       try {
         const [savedTasks, savedSettings] = await Promise.all([
-          loadTasks(),
-          loadSettings(),
+          loadTasks(userId),
+          loadSettings(userId),
         ]);
-        if (!active) return;
+        if (!active || userIdRef.current !== userId) return;
         tasksRef.current = savedTasks;
         settingsRef.current = savedSettings;
         setTasks(savedTasks);
         setSettings(savedSettings);
       } catch {
-        if (active) {
+        if (active && userIdRef.current === userId) {
+          tasksRef.current = [];
+          settingsRef.current = DEFAULT_SETTINGS;
+          setTasks([]);
+          setSettings(DEFAULT_SETTINGS);
           setError('Could not load your saved tasks. Starting with an empty list.');
         }
       } finally {
-        if (active) setLoading(false);
+        if (active && userIdRef.current === userId) setLoading(false);
       }
     })();
     return () => {
       active = false;
     };
-  }, []);
+  }, [userId]);
 
   const commitTasks = useCallback(async (next: Task[]) => {
     tasksRef.current = next;
     setTasks(next);
+    const currentUserId = userIdRef.current;
+    if (!currentUserId) return;
     try {
-      await saveTasks(next);
+      await saveTasks(currentUserId, next);
     } catch {
       setError('Your change could not be saved to this device.');
     }
@@ -149,8 +177,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const next = { ...settingsRef.current, ...patch };
     settingsRef.current = next;
     setSettings(next);
+    const currentUserId = userIdRef.current;
+    if (!currentUserId) return;
     try {
-      await saveSettings(next);
+      await saveSettings(currentUserId, next);
     } catch {
       setError('Your settings could not be saved.');
     }

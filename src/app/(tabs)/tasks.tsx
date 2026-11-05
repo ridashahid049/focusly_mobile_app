@@ -7,6 +7,8 @@ import { Screen } from '../../components/focusly/Screen';
 import { Button } from '../../components/focusly/Button';
 import { EmptyState } from '../../components/focusly/EmptyState';
 import { TaskCard } from '../../components/focusly/TaskCard';
+import { ProfileButton } from '../../components/focusly/ProfileButton';
+import { ProfileMenu } from '../../components/focusly/ProfileMenu';
 import { TaskFilter } from '../../types/task';
 import { todayKey } from '../../utils/date';
 import { filterTasks, sortTasks } from '../../utils/tasks';
@@ -30,6 +32,7 @@ export default function TasksScreen() {
   const router = useRouter();
   const { tasks, loading, error, clearError, toggleTask, deleteTask } = useTasks();
   const [filter, setFilter] = useState<TaskFilter>('all');
+  const [menuOpen, setMenuOpen] = useState(false);
   const today = todayKey();
 
   const counts = useMemo(() => {
@@ -49,14 +52,18 @@ export default function TasksScreen() {
 
   return (
     <Screen>
+      <ProfileMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
       <View style={styles.header}>
         <Text style={styles.title}>All Tasks</Text>
-        <Button
-          title="Add"
-          icon="add"
-          onPress={() => router.push('/task-form')}
-          style={styles.addButton}
-        />
+        <View style={styles.headerActions}>
+          <Button
+            title="Add"
+            icon="add"
+            onPress={() => router.push('/task-form')}
+            style={styles.addButton}
+          />
+          <ProfileButton onPress={() => setMenuOpen(true)} />
+        </View>
       </View>
 
       {error ? (
@@ -123,8 +130,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.md,
   },
-  title: { color: colors.text, fontSize: 26, fontWeight: '800' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  title: { color: colors.text, fontSize: 26, fontWeight: '800', flex: 1 },
   addButton: { minHeight: 44, paddingHorizontal: spacing.lg },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {

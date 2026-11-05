@@ -1,10 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Settings, Task } from '../types/task';
 
-const TASKS_KEY = 'focusly:tasks:v1';
-const SETTINGS_KEY = 'focusly:settings:v1';
+const TASKS_PREFIX = 'focusly:tasks:v1';
+const SETTINGS_PREFIX = 'focusly:settings:v1';
 
 export const DEFAULT_SETTINGS: Settings = { showCompletedToday: true };
+
+function tasksKey(userId: string): string {
+  return `${TASKS_PREFIX}:${userId}`;
+}
+
+function settingsKey(userId: string): string {
+  return `${SETTINGS_PREFIX}:${userId}`;
+}
 
 function isTask(value: unknown): value is Task {
   if (typeof value !== 'object' || value === null) return false;
@@ -19,20 +27,23 @@ function isTask(value: unknown): value is Task {
   );
 }
 
-export async function loadTasks(): Promise<Task[]> {
-  const raw = await AsyncStorage.getItem(TASKS_KEY);
+export async function loadTasks(userId: string): Promise<Task[]> {
+  if (!userId) return [];
+  const raw = await AsyncStorage.getItem(tasksKey(userId));
   if (!raw) return [];
   const parsed: unknown = JSON.parse(raw);
   if (!Array.isArray(parsed)) return [];
   return parsed.filter(isTask);
 }
 
-export async function saveTasks(tasks: Task[]): Promise<void> {
-  await AsyncStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+export async function saveTasks(userId: string, tasks: Task[]): Promise<void> {
+  if (!userId) return;
+  await AsyncStorage.setItem(tasksKey(userId), JSON.stringify(tasks));
 }
 
-export async function loadSettings(): Promise<Settings> {
-  const raw = await AsyncStorage.getItem(SETTINGS_KEY);
+export async function loadSettings(userId: string): Promise<Settings> {
+  if (!userId) return DEFAULT_SETTINGS;
+  const raw = await AsyncStorage.getItem(settingsKey(userId));
   if (!raw) return DEFAULT_SETTINGS;
   const parsed = JSON.parse(raw) as Partial<Settings>;
   return {
@@ -43,6 +54,7 @@ export async function loadSettings(): Promise<Settings> {
   };
 }
 
-export async function saveSettings(settings: Settings): Promise<void> {
-  await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+export async function saveSettings(userId: string, settings: Settings): Promise<void> {
+  if (!userId) return;
+  await AsyncStorage.setItem(settingsKey(userId), JSON.stringify(settings));
 }

@@ -1,24 +1,31 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '../../constants/colors';
 import { useTasks } from '../../context/tasks-context';
+import { useAuth } from '../../context/auth-context';
 import { Screen } from '../../components/focusly/Screen';
 import { Button } from '../../components/focusly/Button';
 import { StatCard } from '../../components/focusly/StatCard';
 import { ProgressBar } from '../../components/focusly/ProgressBar';
 import { EmptyState } from '../../components/focusly/EmptyState';
 import { TaskCard } from '../../components/focusly/TaskCard';
+import { ProfileButton } from '../../components/focusly/ProfileButton';
+import { ProfileMenu } from '../../components/focusly/ProfileMenu';
 import { formatLongDate, todayKey } from '../../utils/date';
 import { getStats, getTodayTasks, sortTasks } from '../../utils/tasks';
 import { confirmAction } from '../../utils/confirm';
+import { getFirstName } from '../../utils/user';
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { tasks, settings, loading, error, clearError, toggleTask, deleteTask } =
     useTasks();
+  const [menuOpen, setMenuOpen] = useState(false);
   const today = todayKey();
+  const firstName = getFirstName(user);
 
   const stats = useMemo(() => getStats(tasks), [tasks]);
   const todayAll = useMemo(() => getTodayTasks(tasks, today), [tasks, today]);
@@ -34,14 +41,18 @@ export default function DashboardScreen() {
 
   return (
     <Screen>
+      <ProfileMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
       <View style={styles.header}>
         <View style={styles.brandRow}>
-          <View style={styles.logo}>
-            <Ionicons name="flash" size={18} color={colors.text} />
+          <View style={styles.brandLeft}>
+            <View style={styles.logo}>
+              <Ionicons name="flash" size={18} color={colors.text} />
+            </View>
+            <Text style={styles.brand}>Focusly</Text>
           </View>
-          <Text style={styles.brand}>Focusly</Text>
+          <ProfileButton onPress={() => setMenuOpen(true)} />
         </View>
-        <Text style={styles.welcome}>Welcome back. Let's make today count.</Text>
+        <Text style={styles.welcome}>Welcome back, {firstName}. Let's make today count.</Text>
         <Text style={styles.date}>{formatLongDate()}</Text>
       </View>
 
@@ -131,7 +142,13 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   header: { gap: spacing.xs },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  brandLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
   logo: {
     width: 32,
     height: 32,
